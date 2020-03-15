@@ -1,0 +1,144 @@
+<html>
+
+<head>
+    <title>Perlin Cubes 1.0</title>
+    <script src="https://cdn.bootcss.com/three.js/110/three.min.js"></script>
+    <script src='./js/perlin.js'></script>
+    <style>
+        canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: black;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        var scene, camera, renderer
+        var cube_geom, cube_mat, cubes
+        var plane_geom, plane_mat
+        var light_amb, light_color
+        var cur_time
+
+        var WINDOW_SCALE = 100,
+            TIME_SCALE_POS = 1000,
+            TIME_SCALE_ROTATE = 1500,
+            ROTATE_SCALE = 0.4,
+            N_CUBES = 16,
+            LIGHT_RADIUS = 20
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.shadowMap.enabled = true;
+            // renderer.shadowMap.type = THREE.PCFShadowMap
+            document.body.appendChild(renderer.domElement);
+
+            window.addEventListener('resize', update_resize)
+
+            // camera.position.set(0, 0, -10)
+            // camera.lookAt(0, 0, 0)
+
+            cube_geom = new THREE.BoxGeometry();
+            cube_mat = new THREE.MeshLambertMaterial();
+            cubes = []
+            for (var i = 0; i < N_CUBES; i++) {
+                var cube = new THREE.Mesh(cube_geom, cube_mat);
+                cube.castShadow = true
+                cube.perlin_scale = Perlin.get(cube.id * 0.2, i)
+                scene.add(cube);
+                cubes.push(cube)
+            }
+
+            plane_geom = new THREE.PlaneGeometry(1000, 1000);
+            plane_mat = new THREE.MeshStandardMaterial({
+                metalness: 0.1,
+                roughness: 0.5,
+            });
+            window.plane = new THREE.Mesh(plane_geom, plane_mat);
+            plane.receiveShadow = true
+            scene.add(plane);
+
+            light_amb = new THREE.AmbientLight(0xffffff, 0.2)
+            scene.add(light_amb)
+
+            light_color = []
+            for (var i = 0; i < 3; i++) {
+                var light = new THREE.PointLight(0xff << (8 * i), 0.7, 500);
+                light.castShadow = true;
+                light.shadow.mapSize.width = 1024;
+                light.shadow.mapSize.height = 1024;
+                light.rotate_speed = Math.random() * ROTATE_SCALE * 0.5
+                light.cur_rotation = Math.PI * 2 * i / 3
+                scene.add(light);
+                light_color.push(light)
+            }
+
+            update_resize()
+        }
+
+        function update_resize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            var dist = window.innerHeight / (2 * Math.tan(camera.fov * Math.PI / 360))
+            camera.position.z = dist / WINDOW_SCALE * 0.8
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function update_cubes() {
+            var t1 = cur_time / TIME_SCALE_POS,
+                t2 = cur_time / TIME_SCALE_ROTATE
+            for (var i = 0; i < cubes.length; i++) {
+                var cube = cubes[i]
+                cube.position.set(
+                    (Perlin.get(i, 0.1, t1 * cube.perlin_scale) - 0.5) * window.innerWidth / WINDOW_SCALE,
+                    (Perlin.get(i, 1.2, t1 * cube.perlin_scale) - 0.5) * window.innerHeight / WINDOW_SCALE,
+                    (Perlin.get(i, 2.4, t1 * cube.perlin_scale) - 0.5) * 4,
+                )
+                cube.rotateX((Perlin.get(i, 3.6, t2) - 0.5) * ROTATE_SCALE)
+                cube.rotateY((Perlin.get(i, 4.9, t2) - 0.5) * ROTATE_SCALE)
+                Object.assign(cube.scale, {
+                    x: Perlin.get(i, -0.1, t2 * cube.perlin_scale) * 1.1 + 0.5,
+                    y: Perlin.get(i, -1.2, t2 * cube.perlin_scale) * 1.1 + 0.5,
+                    z: Perlin.get(i, -2.5, t2 * cube.perlin_scale) * 1.1 + 0.5,
+                })
+            }
+        }
+
+        function update_light() {
+            var t1 = cur_time / TIME_SCALE_POS,
+                t2 = cur_time / TIME_SCALE_ROTATE
+            for (var i = 0; i < 3; i++) {
+                var light = light_color[i],
+                    tmp = Perlin.get(i * Math.PI, t2)
+                light.cur_rotation += tmp * light.rotate_speed
+                tmp = 1 - tmp
+                light.position.set(
+                    Math.cos(light.cur_rotation) * LIGHT_RADIUS * tmp,
+                    Math.sin(light.cur_rotation) * LIGHT_RADIUS * tmp,
+                    8 + 16 * Perlin.get(i, -i)
+                );
+            }
+        }
+
+        function animate() {
+            cur_time = new Date()
+            update_light()
+            update_cubes()
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        init()
+        animate()
+    </script>
+</body>
+
+</html>

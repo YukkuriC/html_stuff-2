@@ -1,0 +1,81 @@
+<html>
+
+<head>
+    <title>Perlin Sea 1.0</title>
+    <script src='./js/perlin.js'></script>
+</head>
+
+<body>
+    <style>
+        canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: black;
+        }
+    </style>
+    <canvas id='cv'></canvas>
+    <script>
+        // canvas
+        var canvas = document.getElementById('cv')
+        var pen = canvas.getContext('2d')
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+
+        // config
+        {
+            NPARTICLE = 5000
+            SCALE = 300
+
+            // perlin config
+            HASH_LEN = 256
+            LOOP = null
+        }
+
+        // var
+        {
+            MOUSEX = MOUSEY = 0
+
+            // layers
+            LAYERS = [
+                [25, 1000, 'rgb(5,10,100)', 15, 10, 5, 5],
+                [43, 2000, 'blue', 20, 15, 7, 3],
+                [75, 3000, 'rgb(50,100,200)', 30, 20, 10, 1.5],
+            ]
+        }
+
+        // draw
+        {
+            function draw(dist, tdist, color, size, vx, vy, scale) {
+                pen.fillStyle = color
+                var time = new Date()
+                for (var x = (time / 1000 * vx) % dist - size; x < canvas.width + size; x += dist) {
+                    for (var y = (time / 1000 * vy) % dist - size; y < canvas.height + size; y += dist) {
+                        var tmp = Perlin.get(x / dist / scale, y / dist / scale, time / tdist)
+                        pen.beginPath();
+                        pen.arc(x, y, tmp * size, 0, Math.PI * 2, true);
+                        pen.closePath();
+                        pen.fill()
+                    }
+                }
+            }
+        }
+
+        // events
+        {
+            function update() {
+                pen.clearRect(0, 0, canvas.width, canvas.height)
+                LAYERS.forEach(l => draw(...l))
+                requestAnimationFrame(update)
+            }
+            update()
+
+            window.addEventListener('resize', e => {
+                canvas.width = window.innerWidth
+                canvas.height = window.innerHeight
+            })
+        }
+    </script>
+</body>
+
+</html>
