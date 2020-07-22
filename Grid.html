@@ -1,7 +1,7 @@
 <html>
 
 <head>
-    <title>Glitched Grids 1.0</title>
+    <title>Glitched Grids 1.1</title>
     <style>
         canvas {
             position: absolute;
@@ -22,7 +22,8 @@
         // base config
         with (window) {
             COLORS = ['#ff0000', '#00ff00', '#0000ff']
-            BLOCK_SIZE = 30
+            BLOCK_W = 120
+            BLOCK_H = 120
 
             FADE_MEAN = 0.1
             FADE_A = 0.06
@@ -34,6 +35,7 @@
             IMPACT_RADIUS_SPLIT = 10
             IMPACT_FADE = 0.98
             IMPACT_RADIUS = IMPACT_RADIUS_ADD = null
+            IMPACT_SIZE_ADD = 0.7
 
             NX = NY = null
             DX = DY = null
@@ -44,10 +46,10 @@
         function set_window() {
             canvas.width = innerWidth
             canvas.height = innerHeight
-            NX = Math.floor(innerWidth / BLOCK_SIZE)
-            NY = Math.floor(innerHeight / BLOCK_SIZE)
-            DX = (innerWidth - NX * BLOCK_SIZE) / 2
-            DY = (innerHeight - NY * BLOCK_SIZE) / 2
+            NX = Math.floor(innerWidth / BLOCK_W)
+            NY = Math.floor(innerHeight / BLOCK_H)
+            DX = (innerWidth - (NX - 1) * BLOCK_W) / 2
+            DY = (innerHeight - (NY - 1) * BLOCK_H) / 2
             IMPACT_RADIUS = 0
             IMPACT_RADIUS_ADD = (innerWidth + innerHeight) / IMPACT_RADIUS_SPLIT
             READY = true
@@ -64,22 +66,24 @@
             for (var i = 0; i < (NX + NY) * DENSITY; i++) {
                 var t1 = random.next(NX),
                     t2 = random.next(NY),
-                    tx = DX + BLOCK_SIZE * t1,
-                    ty = DY + BLOCK_SIZE * t2
+                    tx = DX + BLOCK_W * t1,
+                    ty = DY + BLOCK_H * t2
                 if (MX == null) {
                     pen.fillStyle = "white"
-                    pen.fillRect(tx, ty, BLOCK_SIZE, BLOCK_SIZE)
+                    pen.fillRect(tx - BLOCK_W / 2, ty - BLOCK_H / 2, BLOCK_W, BLOCK_H)
                 } else {
                     var d = Math.sqrt(
-                        Math.pow(tx + BLOCK_SIZE / 2 - MX, 2) +
-                        Math.pow(ty + BLOCK_SIZE / 2 - MY, 2)
+                        Math.pow(tx - MX, 2) +
+                        Math.pow(ty - MY, 2)
                     )
                     d = Math.exp(-d / IMPACT_RADIUS) * IMPACT
+                    var width = BLOCK_W * (1 + d * IMPACT_SIZE_ADD),
+                        height = BLOCK_H * (1 + d * IMPACT_SIZE_ADD)
                     COLORS.forEach(clr => {
-                        var ox = BLOCK_SIZE * (-1 + 2 * Math.random()) * d,
-                            oy = BLOCK_SIZE * (-1 + 2 * Math.random()) * d
+                        var ox = BLOCK_W * (-1 + 2 * Math.random()) * d,
+                            oy = BLOCK_H * (-1 + 2 * Math.random()) * d
                         pen.fillStyle = clr
-                        pen.fillRect(tx + ox, ty + oy, BLOCK_SIZE, BLOCK_SIZE)
+                        pen.fillRect(tx + ox - width / 2, ty + oy - height / 2, width, height)
                     })
                 }
             }
@@ -91,7 +95,7 @@
         function onclick(e) {
             MX = e.offsetX
             MY = e.offsetY
-            IMPACT++
+            IMPACT = 1
             IMPACT_RADIUS += IMPACT_RADIUS_ADD
         }
 
