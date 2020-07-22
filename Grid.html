@@ -1,0 +1,104 @@
+<html>
+
+<head>
+    <title>Glitched Grids 1.0</title>
+    <style>
+        canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: black;
+        }
+    </style>
+    <script src='./js/random.js'></script>
+</head>
+
+<body>
+    <canvas id='cv'></canvas>
+    <script>
+        var canvas = document.getElementById('cv')
+        var pen = canvas.getContext('2d')
+
+        // base config
+        with (window) {
+            COLORS = ['#ff0000', '#00ff00', '#0000ff']
+            BLOCK_SIZE = 30
+
+            FADE_MEAN = 0.1
+            FADE_A = 0.06
+            FADE_T = 2000
+
+            DENSITY = 0.2
+
+            IMPACT = 0
+            IMPACT_RADIUS_SPLIT = 10
+            IMPACT_FADE = 0.98
+            IMPACT_RADIUS = IMPACT_RADIUS_ADD = null
+
+            NX = NY = null
+            DX = DY = null
+            MX = MY = null
+            READY = false
+        }
+
+        function set_window() {
+            canvas.width = innerWidth
+            canvas.height = innerHeight
+            NX = Math.floor(innerWidth / BLOCK_SIZE)
+            NY = Math.floor(innerHeight / BLOCK_SIZE)
+            DX = (innerWidth - NX * BLOCK_SIZE) / 2
+            DY = (innerHeight - NY * BLOCK_SIZE) / 2
+            IMPACT_RADIUS = 0
+            IMPACT_RADIUS_ADD = (innerWidth + innerHeight) / IMPACT_RADIUS_SPLIT
+            READY = true
+        }
+
+        function draw() {
+            if (!READY) set_window()
+            var fade = FADE_MEAN + Math.sin(new Date() / FADE_T) * FADE_A
+
+            pen.globalCompositeOperation = "source-over"
+            pen.fillStyle = `rgba(0,0,0,${fade})`
+            pen.fillRect(0, 0, innerWidth, innerHeight)
+            pen.globalCompositeOperation = "lighter"
+            for (var i = 0; i < (NX + NY) * DENSITY; i++) {
+                var t1 = random.next(NX),
+                    t2 = random.next(NY),
+                    tx = DX + BLOCK_SIZE * t1,
+                    ty = DY + BLOCK_SIZE * t2
+                if (MX == null) {
+                    pen.fillStyle = "white"
+                    pen.fillRect(tx, ty, BLOCK_SIZE, BLOCK_SIZE)
+                } else {
+                    var d = Math.sqrt(
+                        Math.pow(tx + BLOCK_SIZE / 2 - MX, 2) +
+                        Math.pow(ty + BLOCK_SIZE / 2 - MY, 2)
+                    )
+                    d = Math.exp(-d / IMPACT_RADIUS) * IMPACT
+                    COLORS.forEach(clr => {
+                        var ox = BLOCK_SIZE * (-1 + 2 * Math.random()) * d,
+                            oy = BLOCK_SIZE * (-1 + 2 * Math.random()) * d
+                        pen.fillStyle = clr
+                        pen.fillRect(tx + ox, ty + oy, BLOCK_SIZE, BLOCK_SIZE)
+                    })
+                }
+            }
+            IMPACT *= IMPACT_FADE
+            IMPACT_RADIUS *= IMPACT_FADE
+            requestAnimationFrame(draw)
+        }
+
+        function onclick(e) {
+            MX = e.offsetX
+            MY = e.offsetY
+            IMPACT++
+            IMPACT_RADIUS += IMPACT_RADIUS_ADD
+        }
+
+        addEventListener('load', draw)
+        addEventListener('resize', set_window)
+        canvas.addEventListener('click', onclick)
+    </script>
+</body>
+
+</html>
